@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Clock</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+
+        #pomodoro-clock {
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .length-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .label {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+        }
+
+        button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            margin: 0 10px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .length {
+            font-size: 1.2em;
+            margin: 0 10px;
+        }
+
+        #timer {
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        #timer-label {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        #time-left {
+            font-size: 2.5em;
+        }
+
+        .timer-controls button {
+            font-size: 1.2em;
+            margin: 0 15px;
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="pomodoro-clock">
+        <div class="length-control">
+            <div id="break-label" class="label">Break Length</div>
+            <div class="controls">
+                <button id="break-decrement">-</button>
+                <div id="break-length" class="length">5</div>
+                <button id="break-increment">+</button>
+            </div>
+        </div>
+
+        <div class="length-control">
+            <div id="session-label" class="label">Session Length</div>
+            <div class="controls">
+                <button id="session-decrement">-</button>
+                <div id="session-length" class="length">25</div>
+                <button id="session-increment">+</button>
+            </div>
+        </div>
+
+        <div id="timer">
+            <div id="timer-label">Session</div>
+            <div id="time-left">25:00</div>
+        </div>
+
+        <div class="timer-controls">
+            <button id="start_stop">Start</button>
+            <button id="reset">Reset</button>
+        </div>
+
+        <audio id="beep" src="https://assets.mixkit.co/active_storage/sounds/preview/1353/1353.mp3"></audio>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const breakDecrement = document.getElementById('break-decrement');
+            const breakIncrement = document.getElementById('break-increment');
+            const sessionDecrement = document.getElementById('session-decrement');
+            const sessionIncrement = document.getElementById('session-increment');
+            const breakLengthDisplay = document.getElementById('break-length');
+            const sessionLengthDisplay = document.getElementById('session-length');
+            const timerLabel = document.getElementById('timer-label');
+            const timeLeftDisplay = document.getElementById('time-left');
+            const startStopButton = document.getElementById('start_stop');
+            const resetButton = document.getElementById('reset');
+            const beepSound = document.getElementById('beep');
+
+            let breakLength = 5;
+            let sessionLength = 25;
+            let timeLeft = sessionLength * 60;
+            let timerInterval;
+            let isSession = true;
+            let isRunning = false;
+
+            const updateTimeLeftDisplay = () => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timeLeftDisplay.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            };
+
+            const updateBreakLengthDisplay = () => {
+                breakLengthDisplay.innerText = breakLength;
+            };
+
+            const updateSessionLengthDisplay = () => {
+                sessionLengthDisplay.innerText = sessionLength;
+            };
+
+            const resetTimer = () => {
+                clearInterval(timerInterval);
+                isRunning = false;
+                breakLength = 5;
+                sessionLength = 25;
+                timeLeft = sessionLength * 60;
+                isSession = true;
+                timerLabel.innerText = 'Session';
+                updateBreakLengthDisplay();
+                updateSessionLengthDisplay();
+                updateTimeLeftDisplay();
+                beepSound.pause();
+                beepSound.currentTime = 0;
+                startStopButton.innerText = 'Start';
+            };
+
+            const startTimer = () => {
+                isRunning = true;
+                startStopButton.innerText = 'Pause';
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimeLeftDisplay();
+                    if (timeLeft < 0) {
+                        beepSound.play();
+                        if (isSession) {
+                            isSession = false;
+                            timerLabel.innerText = 'Break';
+                            timeLeft = breakLength * 60;
+                        } else {
+                            isSession = true;
+                            timerLabel.innerText = 'Session';
+                            timeLeft = sessionLength * 60;
+                        }
+                        updateTimeLeftDisplay();
+                    }
+                }, 1000);
+            };
+
+            const pauseTimer = () => {
+                clearInterval(timerInterval);
+                isRunning = false;
+                startStopButton.innerText = 'Start';
+            };
+
+            breakDecrement.addEventListener('click', () => {
+                if (!isRunning && breakLength > 1) {
+                    breakLength--;
+                    updateBreakLengthDisplay();
+                }
+            });
+
+            breakIncrement.addEventListener('click', () => {
+                if (!isRunning && breakLength < 60) {
+                    breakLength++;
+                    updateBreakLengthDisplay();
+                }
+            });
+
+            sessionDecrement.addEventListener('click', () => {
+                if (!isRunning && sessionLength > 1) {
+                    sessionLength--;
+                    updateSessionLengthDisplay();
+                    if (isSession) {
+                        timeLeft = sessionLength * 60;
+                        updateTimeLeftDisplay();
+                    }
+                }
+            });
+
+            sessionIncrement.addEventListener('click', () => {
+                if (!isRunning && sessionLength < 60) {
+                    sessionLength++;
+                    updateSessionLengthDisplay();
+                    if (isSession) {
+                        timeLeft = sessionLength * 60;
+                        updateTimeLeftDisplay();
+                    }
+                }
+            });
+
+            startStopButton.addEventListener('click', () => {
+                if (isRunning) {
+                    pauseTimer();
+                } else {
+                    startTimer();
+                }
+            });
+
+            resetButton.addEventListener('click', resetTimer);
+
+            updateBreakLengthDisplay();
+            updateSessionLengthDisplay();
+            updateTimeLeftDisplay();
+        });
+    </script>
+</body>
+</html>
